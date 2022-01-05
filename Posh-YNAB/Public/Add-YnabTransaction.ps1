@@ -12,10 +12,10 @@ function Add-YnabTransaction {
     Adds a transaction to TestBudget with the specified account, category, memo, and outflow.
     Stores the transaction as a preset called 'Coffee' (see: Add-YnabTransactionPreset).
     .EXAMPLE
-    Add-YnabTransaction -PresetName 'Coffee'
+    Add-YnabTransaction -Preset 'Coffee'
     Adds a transaction to YNAB using the settings from the 'Coffee' transaction preset (see: Get-YnabTransactionPreset).
     .EXAMPLE
-    Add-YnabTransaction -PresetName 'Coffee' -Inflow 3.50 -Memo 'Refund' -StoreAs 'Coffee Refund'
+    Add-YnabTransaction -Preset 'Coffee' -Inflow 3.50 -Memo 'Refund' -StoreAs 'Coffee Refund'
     Adds a transaction to YNAB using the settings from the 'Coffee' transaction preset, but overrides the existing amount and memo, then stores the new details as 'Coffee Refund'.
     #>
     [CmdletBinding(DefaultParameterSetName='NoPreset,Outflow')]
@@ -283,9 +283,10 @@ function Add-YnabTransaction {
             if ($Memo) {$body.transaction.memo = $Memo}
             if ($Cleared) {$body.transaction.cleared = 'cleared'}
             if ($FlagColor) {$body.transaction.flag_color = $FlagColor.ToLower()}
-
             $response = Invoke-RestMethod "$uri/budgets/$budgetId/transactions" -Headers $header -Body ($body | ConvertTo-Json) -Method 'POST'
-
+            #Invoke-RestMethod "$uri/budgets/$budgetId/transactions" -Headers $header -Body ($body | ConvertTo-Json) -Method 'POST' | out-file ./respoonse.json
+            $response | Export-Clixml .\response.xml
+            
             # Return parsed details
             if ($response) {
                 Get-ParsedTransactionJson $response.data.transaction
