@@ -11,9 +11,9 @@ BeforeAll {
 
     $testPreset = 'Test Preset'
     $testBudget = 'Test Budget'
-    $testAccount = 'Checking'
+    $testAccount = 'Test Account'
     $testPayee = 'Test Payee'
-    $testCategory = 'Water'
+    $testCategory = 'Test Category'
     $testMemo = 'Test Memo'
     $testOutflow = 10.25
     $testFlagColor = 'Red'
@@ -235,7 +235,7 @@ Describe 'Add-YnabTransaction' {
         It 'Supports pipeline input by property name for a single object' {
             $response = $transactionObject | Add-YnabTransaction
             
-            ([Array]$response).Count | Should -Be 1
+            $response.Count | Should -Be 1
         }
     
         It 'Supports pipeline input by property name for an array of objects' {
