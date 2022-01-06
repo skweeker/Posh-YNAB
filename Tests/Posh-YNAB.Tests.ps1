@@ -27,6 +27,7 @@ BeforeAll {
         Memo = $testMemo
         Token = $testToken
         FlagColor = $testFlagColor
+        Outflow = $testOutflow
     }
 
     $transactionHashtable = @{
@@ -53,7 +54,6 @@ Describe -Tags ('Unit', 'Acceptance') "<module> Module Tests" {
 
         # Files Exist
         It "should exist" {
-            #Should "$($function.FullName)" -Exist
             "$($function.FullName)" | Should -Exist
         }
 
@@ -73,14 +73,6 @@ Describe -Tags ('Unit', 'Acceptance') "<module> Module Tests" {
         #It "should have a SYNOPSIS section" {
         #   "$($function.FullName)" | Should -FileContentMatch '.SYNOPSIS'
         #}
-      
-
-#      It "is valid PowerShell code" {
-#        $psFile = Get-Content -Path $function.FullName -ErrorAction Stop
-#        $errors = $null
-#        $null = [System.Management.Automation.PSParser]::Tokenize($psFile, [ref]$errors)
-#        $errors.Count | Should -Be 0
-#      }
   }
 }
 
@@ -91,6 +83,15 @@ Describe 'Add-YnabTransaction' {
     }
 
     BeforeAll {
+        function get-amount ($amount) {
+            return [int]$mount
+        }
+
+        function convert-amount {
+            $amount = get-amount
+            return $amount * 1000
+        }
+
         Mock -ModuleName Posh-YNAB -CommandName Invoke-RestMethod -Verifiable { 
             [PSCustomObject]@{
                 data = @{
@@ -100,7 +101,7 @@ Describe 'Add-YnabTransaction' {
                     transaction = @{
                         id = 1
                         date = "$(get-date -f 'yyyy-MM-dd')" # Used to be $Date.ToString('yyyy-MM-dd')
-                        amount = ($Amount * 1000) # How do we get this to use the values from add-transaction?
+                        amount = $(convert-amount) # How do we get this to use the values from add-transaction?
                         memo = $Memo
                         cleared = 'uncleared'
                         approved = $Approved
@@ -146,6 +147,8 @@ Describe 'Add-YnabTransaction' {
 
     Context 'Supports all expected parameter combinations' {
         It 'Supports transactions with Outflow' {
+            Mock get-amount {return -10.25}
+
             $response = Add-YnabTransaction @transactionHashtable -Outflow 10.25
             
             $response.Count | Should -Be 1
@@ -153,6 +156,8 @@ Describe 'Add-YnabTransaction' {
         }
         
         It 'Supports transactions with Inflow' {
+            Mock get-amount {return 10.25}
+
             $response = Add-YnabTransaction @transactionHashtable -Inflow 10.25
             
             $response.Count | Should -Be 1
@@ -160,6 +165,8 @@ Describe 'Add-YnabTransaction' {
         }
 
         It 'Supports transactions with Amount' {
+            Mock get-amount {return -10.25}
+
             $response = Add-YnabTransaction @transactionHashtable -Amount -10.25
 
             $response.Count | Should -Be 1
@@ -167,6 +174,8 @@ Describe 'Add-YnabTransaction' {
         }
         
         It 'Supports transactions with Preset only' {
+            Mock get-amount {return -10.25}
+
             $response = Add-YnabTransaction -Preset "Test Preset"
         
             $response.Count | Should -Be 1
@@ -174,6 +183,8 @@ Describe 'Add-YnabTransaction' {
         }
         
         It 'Supports transactions with an array of presets' {
+            Mock get-amount {return -10.25}
+
             $response = Add-YnabTransaction -Preset @($testPreset,$testPreset)
         
             $response.Count | Should -Be 2
@@ -182,6 +193,8 @@ Describe 'Add-YnabTransaction' {
         }
 
         It 'Supports transactions with Preset and Outflow' {
+            Mock get-amount {return -10.55}
+
             $response = Add-YnabTransaction -Preset $testPreset -Outflow 10.55
         
             $response.Count | Should -Be 1
@@ -189,6 +202,8 @@ Describe 'Add-YnabTransaction' {
         }
         
         It 'Supports transactions with Preset and Inflow' {
+            Mock get-amount {return 10.55}
+
             $response = Add-YnabTransaction -Preset $testPreset -Inflow 10.55
 
             $response.Count | Should -Be 1
@@ -196,6 +211,8 @@ Describe 'Add-YnabTransaction' {
         }
         
         It 'Supports transactions with Preset and Amount' {
+            Mock get-amount {return -10.55}
+
             $response = Add-YnabTransaction -Preset $testPreset -Amount -10.55
 
             $response.Count | Should -Be 1
@@ -203,7 +220,9 @@ Describe 'Add-YnabTransaction' {
         }
 
         It 'Supports transactions with Preset and other (non-amount) variables' {
-            $response = Add-YnabTransaction -Preset $testPreset -Payee 'Test Payee2' -Memo 'Test Memo2' 
+            Mock get-amount {return -10.25}
+
+            $response = Add-YnabTransaction -Preset $testPreset -Payee 'Test Payee2' -Memo "Test Memo2"
 
             $response.Count | Should -Be 1
             $response.Amount | Should -Be -10.25
@@ -211,7 +230,7 @@ Describe 'Add-YnabTransaction' {
             $response.Payee | Should -Be 'Test Payee2'
         }
     }
-<#
+
     Context 'Supports pipeline' {
         It 'Supports pipeline input by property name for a single object' {
             $response = $transactionObject | Add-YnabTransaction
@@ -226,13 +245,17 @@ Describe 'Add-YnabTransaction' {
         }
     
         It 'Supports pipeline input of a single preset by name' {
+            Mock get-amount {return -10.25}
+
             $response = $testPreset | Add-YnabTransaction
             
-            ([Array]$response).Count | Should -Be 1
+            $response.Count | Should -Be 1
             $response.Amount | Should -Be -10.25
         }
     
         It 'Supports pipeline input of an array of presets by name' {
+            Mock get-amount {return -10.25}
+
             $response = @($testPreset,$testPreset) | Add-YnabTransaction
             
             $response.Count | Should -Be 2
@@ -240,7 +263,6 @@ Describe 'Add-YnabTransaction' {
             $response[1].Amount | Should -Be -10.25
         }
     }
-#>
 }
 
 # Restore the original default parameter values state after testing
